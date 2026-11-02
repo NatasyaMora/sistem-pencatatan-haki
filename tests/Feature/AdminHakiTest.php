@@ -16,6 +16,7 @@ class AdminHakiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->artisan('db:seed');
     }
 
@@ -74,20 +75,22 @@ class AdminHakiTest extends TestCase
             'is_public' => false,
         ]);
 
-        // Search by title
         $response = $this->actingAs($admin)->get('/admin/haki?search=Terpusat');
+
         $response->assertStatus(200);
         $response->assertSee('Sistem AI Terpusat');
         $response->assertDontSee('Aplikasi Mobile Pembelajaran');
 
-        // Search by cert number
         $responseCert = $this->actingAs($admin)->get('/admin/haki?search=CERT-100');
+
         $responseCert->assertStatus(200);
         $responseCert->assertSee('Aplikasi Mobile Pembelajaran');
         $responseCert->assertDontSee('Sistem AI Terpusat');
 
-        // Search by user name
-        $responseUser = $this->actingAs($admin)->get('/admin/haki?search=' . urlencode($user->name));
+        $responseUser = $this->actingAs($admin)->get(
+            '/admin/haki?search=' . urlencode($user->name)
+        );
+
         $responseUser->assertStatus(200);
         $responseUser->assertSee('Sistem AI Terpusat');
         $responseUser->assertSee('Aplikasi Mobile Pembelajaran');
@@ -120,13 +123,13 @@ class AdminHakiTest extends TestCase
             'is_public' => true,
         ]);
 
-        // Filter jenis: Hak Cipta
         $resJenis = $this->actingAs($admin)->get('/admin/haki?jenis=Hak+Cipta');
+
         $resJenis->assertSee('Inovasi Cipta 2023');
         $resJenis->assertDontSee('Inovasi Paten 2024');
 
-        // Filter tahun: 2024
         $resTahun = $this->actingAs($admin)->get('/admin/haki?tahun=2024');
+
         $resTahun->assertSee('Inovasi Paten 2024');
         $resTahun->assertDontSee('Inovasi Cipta 2023');
     }
@@ -136,7 +139,6 @@ class AdminHakiTest extends TestCase
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
 
-        // Create 15 records
         for ($i = 1; $i <= 15; $i++) {
             Haki::create([
                 'user_id' => $user->id,
@@ -150,7 +152,10 @@ class AdminHakiTest extends TestCase
             ]);
         }
 
-        $response = $this->actingAs($admin)->get('/admin/haki?jenis=Hak+Cipta&page=2');
+        $response = $this->actingAs($admin)->get(
+            '/admin/haki?jenis=Hak+Cipta&page=2'
+        );
+
         $response->assertStatus(200);
         $response->assertSee('jenis=Hak%20Cipta');
     }
@@ -158,6 +163,7 @@ class AdminHakiTest extends TestCase
     public function test_guest_cannot_access_admin_haki_detail(): void
     {
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'Detail Test HAKI',
@@ -170,12 +176,14 @@ class AdminHakiTest extends TestCase
         ]);
 
         $response = $this->get('/admin/haki/' . $haki->id);
+
         $response->assertRedirect('/login');
     }
 
     public function test_regular_user_cannot_access_admin_haki_detail(): void
     {
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'Detail Test HAKI',
@@ -188,6 +196,7 @@ class AdminHakiTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get('/admin/haki/' . $haki->id);
+
         $response->assertRedirect('/my-haki');
     }
 
@@ -195,6 +204,7 @@ class AdminHakiTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'Detail Test HAKI Spesifik',
@@ -232,6 +242,7 @@ class AdminHakiTest extends TestCase
     public function test_guest_cannot_access_edit_or_update(): void
     {
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Edit Guest',
@@ -244,17 +255,20 @@ class AdminHakiTest extends TestCase
         ]);
 
         $responseEdit = $this->get("/admin/haki/{$haki->id}/edit");
+
         $responseEdit->assertRedirect('/login');
 
         $responseUpdate = $this->put("/admin/haki/{$haki->id}", [
             'judul_haki' => 'Updated Judul',
         ]);
+
         $responseUpdate->assertRedirect('/login');
     }
 
     public function test_regular_user_cannot_access_edit_or_update(): void
     {
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Edit User',
@@ -267,11 +281,13 @@ class AdminHakiTest extends TestCase
         ]);
 
         $responseEdit = $this->actingAs($user)->get("/admin/haki/{$haki->id}/edit");
+
         $responseEdit->assertRedirect('/my-haki');
 
         $responseUpdate = $this->actingAs($user)->put("/admin/haki/{$haki->id}", [
             'judul_haki' => 'Updated Judul',
         ]);
+
         $responseUpdate->assertRedirect('/my-haki');
     }
 
@@ -279,6 +295,7 @@ class AdminHakiTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Edit Form Test',
@@ -302,6 +319,7 @@ class AdminHakiTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'Judul Lama',
@@ -314,10 +332,10 @@ class AdminHakiTest extends TestCase
             'is_public' => true,
         ]);
 
-        $otherUser = User::where('role', 'admin')->first(); // attempt to hijack user_id to admin's ID
+        $otherUser = User::where('role', 'admin')->first();
 
         $response = $this->actingAs($admin)->put("/admin/haki/{$haki->id}", [
-            'user_id' => $otherUser->id, // Should be ignored
+            'user_id' => $otherUser->id,
             'judul_haki' => 'Judul Baru yang Diperbarui',
             'jenis_haki' => 'Paten',
             'nomor_sertifikat' => 'CERT-BARU-888',
@@ -337,13 +355,14 @@ class AdminHakiTest extends TestCase
         $this->assertEquals('2025-05-05', $haki->tanggal_terbit->format('Y-m-d'));
         $this->assertEquals(2025, $haki->tahun);
         $this->assertEquals('Deskripsi Baru', $haki->deskripsi);
-        $this->assertEquals($user->id, $haki->user_id); // Pemilik TIDAK BERUBAH!
+        $this->assertEquals($user->id, $haki->user_id);
     }
 
     public function test_admin_can_update_without_new_file(): void
     {
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Tetap File',
@@ -364,19 +383,30 @@ class AdminHakiTest extends TestCase
         ]);
 
         $response->assertRedirect(route('admin.haki.show', $haki));
+
         $haki->refresh();
-        $this->assertEquals('certificates/original-cert.pdf', $haki->file_sertifikat);
+
+        $this->assertEquals(
+            'certificates/original-cert.pdf',
+            $haki->file_sertifikat
+        );
     }
 
     public function test_admin_can_update_with_new_file_deletes_old_file(): void
     {
+        // File baru harus disimpan di disk privat (local).
+        // File lama mungkin masih berada di disk public.
+        Storage::fake('local');
         Storage::fake('public');
 
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
 
-        // Create initial fake file on public disk
-        $oldFilePath = Storage::disk('public')->putFile('certificates', UploadedFile::fake()->create('old_cert.pdf', 100));
+        // Simulasikan file lama yang masih tersimpan di disk public.
+        $oldFilePath = Storage::disk('public')->putFile(
+            'certificates',
+            UploadedFile::fake()->create('old_cert.pdf', 100)
+        );
 
         $haki = Haki::create([
             'user_id' => $user->id,
@@ -391,7 +421,11 @@ class AdminHakiTest extends TestCase
 
         Storage::disk('public')->assertExists($oldFilePath);
 
-        $newFile = UploadedFile::fake()->create('new_sertifikat.pdf', 500, 'application/pdf');
+        $newFile = UploadedFile::fake()->create(
+            'new_sertifikat.pdf',
+            500,
+            'application/pdf'
+        );
 
         $response = $this->actingAs($admin)->put("/admin/haki/{$haki->id}", [
             'judul_haki' => 'HAKI Ganti File Updated',
@@ -406,20 +440,27 @@ class AdminHakiTest extends TestCase
 
         $haki->refresh();
 
-        // Assert old file deleted from storage
+        // Pastikan file lama di disk public sudah dihapus.
         Storage::disk('public')->assertMissing($oldFilePath);
 
-        // Assert new file exists in storage
-        Storage::disk('public')->assertExists($haki->file_sertifikat);
+        // Pastikan file sertifikat baru tersimpan pada disk privat.
+        Storage::disk('local')->assertExists($haki->file_sertifikat);
+
+        // Pastikan file baru tidak tersimpan pada disk public.
+        Storage::disk('public')->assertMissing($haki->file_sertifikat);
+
+        // Pastikan lokasi file sertifikat telah berubah.
         $this->assertNotEquals($oldFilePath, $haki->file_sertifikat);
     }
 
     public function test_update_file_size_exceeding_3mb_is_rejected(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Large File Test',
@@ -431,7 +472,7 @@ class AdminHakiTest extends TestCase
             'is_public' => true,
         ]);
 
-        // 3073 KB > 3 MB (3072 KB)
+        // 3073 KB melebihi batas 3072 KB.
         $largeFile = UploadedFile::fake()->create('large.pdf', 3073);
 
         $response = $this->actingAs($admin)->put("/admin/haki/{$haki->id}", [
@@ -449,9 +490,11 @@ class AdminHakiTest extends TestCase
     public function test_update_invalid_file_format_is_rejected(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Invalid Format Test',
@@ -481,6 +524,7 @@ class AdminHakiTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
         $user = User::where('role', 'user')->first();
+
         $haki = Haki::create([
             'user_id' => $user->id,
             'judul_haki' => 'HAKI Validation Test',

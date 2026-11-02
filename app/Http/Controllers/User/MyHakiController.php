@@ -10,12 +10,14 @@ use App\Models\JenisHaki;
 use App\Models\StudyProgram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Throwable;
 
 class MyHakiController extends Controller
 {
     /**
-     * Menampilkan daftar HAKI milik user yang sedang login.
+     * Menampilkan daftar HAKI milik pengguna yang sedang login.
      */
     public function index(Request $request): View
     {
@@ -57,45 +59,74 @@ class MyHakiController extends Controller
     }
 
     /**
-     * Menyimpan pencatatan HAKI baru ke database.
+     * Menyimpan pencatatan HAKI baru.
+     *
+     * Sertifikat disimpan pada disk privat, bukan disk public.
      */
     public function store(StoreHakiRequest $request): RedirectResponse
     {
         $validated = $request->validated();
 
-        // Ambil jenis HAKI yang sudah divalidasi.
-        $jenisHaki = JenisHaki::findOrFail(
-            $validated['jenis_haki_id']
-        );
+        $file = $request->file('file_sertifikat');
 
-        // Simpan file sertifikat.
-        $filePath = $request->file('file_sertifikat')
-            ->store('certificates', 'public');
+        if (!$file) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'file_sertifikat' =>
+                        'File sertifikat wajib diunggah.',
+                ]);
+        }
 
-        // Tentukan status otomatis berdasarkan tanggal kadaluarsa.
+        // Pastikan jenis HAKI tersedia.
+        $jenisHaki = JenisHaki::where('status', 'aktif')
+            ->findOrFail($validated['jenis_haki_id']);
+
+        // Simpan sertifikat secara privat:
+        // storage/app/private/certificates/
+        $filePath = $file->store('certificates', 'local');
+
+        if (!$filePath) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'file_sertifikat' =>
+                        'Sertifikat gagal disimpan. Silakan coba kembali.',
+                ]);
+        }
+
+        // Tentukan status berdasarkan tanggal kedaluwarsa.
         $status = $validated['tanggal_kadaluarsa'] >= now()->toDateString()
             ? 'aktif'
             : 'nonaktif';
 
-        Haki::create([
-            'user_id' => $request->user()->id,
-            'judul_haki' => $validated['judul_haki'],
-            'jenis_haki_id' => $jenisHaki->id,
-            'jenis_haki' => $jenisHaki->nama,
-            'nomor_sertifikat' => $validated['nomor_sertifikat'],
-            'tanggal_terbit' => $validated['tanggal_terbit'],
-            'tanggal_kadaluarsa' => $validated['tanggal_kadaluarsa'],
-            'tahun' => date(
-                'Y',
-                strtotime($validated['tanggal_terbit'])
-            ),
-            'faculty_id' => $validated['faculty_id'],
-            'study_program_id' => $validated['study_program_id'],
-            'deskripsi' => $validated['deskripsi'] ?? null,
-            'file_sertifikat' => $filePath,
-            'status' => $status,
-            'is_public' => false,
-        ]);
+        try {
+            Haki::create([
+                'user_id' => $request->user()->id,
+                'judul_haki' => $validated['judul_haki'],
+                'jenis_haki_id' => $jenisHaki->id,
+                'jenis_haki' => $jenisHaki->nama,
+                'nomor_sertifikat' => $validated['nomor_sertifikat'],
+                'tanggal_terbit' => $validated['tanggal_terbit'],
+                'tanggal_kadaluarsa' => $validated['tanggal_kadaluarsa'],
+                'tahun' => date(
+                    'Y',
+                    strtotime($validated['tanggal_terbit'])
+                ),
+                'faculty_id' => $validated['faculty_id'],
+                'study_program_id' => $validated['study_program_id'],
+                'deskripsi' => $validated['deskripsi'] ?? null,
+                'file_sertifikat' => $filePath,
+                'status' => $status,
+                'is_public' => false,
+            ]);
+        } catch (Throwable $exception) {
+            // Hapus berkas baru apabila penyimpanan data gagal,
+            // supaya tidak meninggalkan berkas tanpa catatan HAKI.
+            Storage::disk('local')->delete($filePath);
+
+            throw $exception;
+        }
 
         return redirect()
             ->route('user.haki.index')

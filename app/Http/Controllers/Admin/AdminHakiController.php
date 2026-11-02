@@ -8,12 +8,15 @@ use App\Models\Haki;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class AdminHakiController extends Controller
 {
     /**
-     * Menampilkan daftar seluruh HAKI untuk Admin dengan pencarian, filter, dan pagination.
+     * Menampilkan daftar seluruh HAKI dengan pencarian,
+     * filter, dan pagination.
      */
     public function index(Request $request): View
     {
@@ -21,39 +24,37 @@ class AdminHakiController extends Controller
         $jenis = $request->query('jenis');
         $tahun = $request->query('tahun');
 
-        // Query utama dengan eager loading user
         $query = Haki::with('user');
 
-        // Fitur Pencarian: judul HAKI, nomor sertifikat, nama pemilik, NIM/NIP pemilik
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('judul_haki', 'like', '%' . $search . '%')
-                  ->orWhere('nomor_sertifikat', 'like', '%' . $search . '%')
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', '%' . $search . '%')
-                                ->orWhere('identity_number', 'like', '%' . $search . '%');
-                  });
+                    ->orWhere('nomor_sertifikat', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere(
+                                'identity_number',
+                                'like',
+                                '%' . $search . '%'
+                            );
+                    });
             });
         }
 
-        // Filter Jenis HAKI
         if (!empty($jenis)) {
             $query->where('jenis_haki', $jenis);
         }
 
-        // Filter Tahun
         if (!empty($tahun)) {
             $query->where('tahun', $tahun);
         }
 
-        // Ambil daftar tahun unik yang tersedia di database, diurutkan dari terbaru ke terlama
         $tahunList = Haki::select('tahun')
             ->distinct()
             ->whereNotNull('tahun')
             ->orderBy('tahun', 'desc')
             ->pluck('tahun');
 
-        // Pilihan Jenis HAKI
         $jenisOptions = [
             'Hak Cipta',
             'Paten',
@@ -64,8 +65,9 @@ class AdminHakiController extends Controller
             'Lainnya',
         ];
 
-        // Pagination 10 data per halaman & pertahankan parameter query string
-        $hakis = $query->latest()->paginate(10)->withQueryString();
+        $hakis = $query->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.haki.index', compact(
             'hakis',
@@ -78,7 +80,7 @@ class AdminHakiController extends Controller
     }
 
     /**
-     * Menampilkan detail satu data HAKI untuk Admin.
+     * Menampilkan detail HAKI untuk Admin.
      */
     public function show(Haki $haki): View
     {
@@ -88,7 +90,7 @@ class AdminHakiController extends Controller
     }
 
     /**
-     * Menampilkan form edit data HAKI.
+     * Menampilkan form edit HAKI.
      */
     public function edit(Haki $haki): View
     {
@@ -104,14 +106,21 @@ class AdminHakiController extends Controller
             'Lainnya',
         ];
 
-        return view('admin.haki.edit', compact('haki', 'jenisOptions'));
+        return view('admin.haki.edit', compact(
+            'haki',
+            'jenisOptions'
+        ));
     }
 
     /**
-     * Memperbarui data HAKI yang ada di database.
+     * Memperbarui data HAKI.
+     *
+     * Sertifikat pengganti disimpan di penyimpanan privat.
      */
-    public function update(UpdateHakiRequest $request, Haki $haki): RedirectResponse
-    {
+    public function update(
+        UpdateHakiRequest $request,
+        Haki $haki
+    ): RedirectResponse {
         $validated = $request->validated();
 
         $updateData = [
@@ -123,22 +132,70 @@ class AdminHakiController extends Controller
             'deskripsi' => $validated['deskripsi'] ?? null,
         ];
 
-        // Penanganan penggantian file sertifikat (opsional)
-        if ($request->hasFile('file_sertifikat')) {
-            $newPath = $request->file('file_sertifikat')->store('certificates', 'public');
+        $oldFilePath = $haki->file_sertifikat;
+        $newFilePath = null;
 
-            // Hapus file lama dari storage jika ada dan file baru sudah tersimpan
-            if ($haki->file_sertifikat && Storage::disk('public')->exists($haki->file_sertifikat)) {
-                Storage::disk('public')->delete($haki->file_sertifikat);
+        // Simpan berkas pengganti di storage/app/private/certificates.
+        if ($request->hasFile('file_sertifikat')) {
+            $newFilePath = $request->file('file_sertifikat')
+                ->store('certificates', 'local');
+
+            if (!$newFilePath) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'file_sertifikat' =>
+                            'Sertifikat gagal disimpan. Silakan coba kembali.',
+                    ]);
             }
 
-            $updateData['file_sertifikat'] = $newPath;
+            $updateData['file_sertifikat'] = $newFilePath;
         }
 
-        // user_id TIDAK PERNAH diupdate
-        $haki->update($updateData);
+        try {
+            // Pemilik HAKI tidak diubah oleh proses ini.
+            $haki->update($updateData);
+        } catch (Throwable $exception) {
+            // Hapus berkas baru jika pembaruan database gagal.
+            if ($newFilePath !== null) {
+                Storage::disk('local')->delete($newFilePath);
+            }
 
-        return redirect()->route('admin.haki.show', $haki)
+            throw $exception;
+        }
+
+        // Hapus berkas lama hanya setelah database berhasil diperbarui.
+        // Periksa kedua disk karena file lama mungkin berada di public,
+        // sedangkan file terbaru berada di private.
+        if (
+            $newFilePath !== null &&
+            $oldFilePath &&
+            $oldFilePath !== $newFilePath
+        ) {
+            $this->deleteOldCertificate($oldFilePath);
+        }
+
+        return redirect()
+            ->route('admin.haki.show', $haki)
             ->with('success', 'Data HAKI berhasil diperbarui.');
+    }
+
+    /**
+     * Menghapus berkas lama dari disk lokal dan publik.
+     */
+    private function deleteOldCertificate(string $path): void
+    {
+        // Batasi penghapusan pada direktori sertifikat yang dikenal.
+        $allowed = str_starts_with($path, 'certificates/')
+            && !str_contains($path, '..')
+            && !str_contains($path, '\\')
+            && !str_contains($path, "\0");
+
+        if (!$allowed) {
+            return;
+        }
+
+        Storage::disk('local')->delete($path);
+        Storage::disk('public')->delete($path);
     }
 }

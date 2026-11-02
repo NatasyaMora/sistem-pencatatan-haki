@@ -32,5 +32,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+                <!-- Password khusus pengujian otomatis -->
+        <env name="HAKIKU_SEED_ADMIN_PASSWORD" value="test-only-admin-password"/>
+        <env name="HAKIKU_SEED_MAHASISWA_PASSWORD" value="test-only-mahasiswa-password"/>
+        <env name="HAKIKU_SEED_DOSEN_PASSWORD" value="test-only-dosen-password"/>
     </php>
 </phpunit>

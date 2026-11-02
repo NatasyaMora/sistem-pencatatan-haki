@@ -1,4 +1,3 @@
-
 <?php
 
 return [
@@ -43,6 +42,21 @@ return [
         ),
 
         'timeout' => (int) env('BRIDGE_API_TIMEOUT', 15),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Akun Contoh HAKIKU
+    |--------------------------------------------------------------------------
+    |
+    | Digunakan untuk seeder di lingkungan lokal dan testing.
+    | Jangan menyimpan password asli Portal Akademik di sini.
+    */
+
+    'hakiku_seed' => [
+        'admin_password' => env('HAKIKU_SEED_ADMIN_PASSWORD'),
+        'mahasiswa_password' => env('HAKIKU_SEED_MAHASISWA_PASSWORD'),
+        'dosen_password' => env('HAKIKU_SEED_DOSEN_PASSWORD'),
     ],
 
 ];
