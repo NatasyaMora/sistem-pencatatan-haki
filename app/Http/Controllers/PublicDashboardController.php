@@ -2,36 +2,86 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Faculty;
 use App\Models\Haki;
+use App\Models\JenisHaki;
+use App\Models\StudyProgram;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class PublicDashboardController extends Controller
 {
     /**
+     * Filter HAKI yang boleh dihitung pada dashboard publik.
+     */
+    private function filterHakiPublikAktif(Builder $query): Builder
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        return $query
+            ->where('hakis.status', 'aktif')
+            ->where('hakis.is_public', true)
+            ->whereNotNull('hakis.tanggal_kadaluarsa')
+            ->whereDate('hakis.tanggal_kadaluarsa', '>=', $today);
+    }
+
+    /**
      * Menampilkan Dashboard Publik HAKIKU.
      */
     public function index(): View
     {
-        $totalTercatat = Haki::count();
-        $totalPublic = Haki::public()->count();
+        Haki::syncExpiredStatuses();
 
-        // Statistik per jenis_haki untuk HAKI publik
-        $jenisStats = Haki::public()
-            ->selectRaw('jenis_haki, count(*) as total')
-            ->groupBy('jenis_haki')
-            ->pluck('total', 'jenis_haki');
+        // Total HAKI aktif, sudah dipublikasikan, dan belum kedaluwarsa.
+        $totalHakiAktif = $this->filterHakiPublikAktif(
+            Haki::query()
+        )->count();
 
-        // Mengambil data HAKI publik saja (is_public = true)
-        $publicHakis = Haki::public()
-            ->with('user:id,name,identity_number,user_type')
-            ->latest()
-            ->paginate(10);
+        // Menghitung jumlah jenis HAKI yang aktif pada master data.
+        $totalJenisHaki = JenisHaki::where('status', 'aktif')->count();
+
+        // Menghitung jumlah fakultas aktif.
+        $totalFakultas = Faculty::where('status', 'aktif')->count();
+
+        // Menghitung jumlah program studi aktif.
+        $totalJurusan = StudyProgram::where('status', 'aktif')->count();
+
+        // Statistik HAKI berdasarkan fakultas.
+        $facultyStats = Faculty::query()
+            ->where('status', 'aktif')
+            ->withCount([
+                'hakis as total_haki' => function (Builder $query) {
+                    $this->filterHakiPublikAktif($query);
+                },
+            ])
+            ->orderBy('nama')
+            ->get()
+            ->filter(fn ($faculty) => $faculty->total_haki > 0)
+            ->sortByDesc('total_haki')
+            ->values();
+
+        // Statistik HAKI berdasarkan program studi.
+        $studyProgramStats = StudyProgram::query()
+            ->where('status', 'aktif')
+            ->withCount([
+                'hakis as total_haki' => function (Builder $query) {
+                    $this->filterHakiPublikAktif($query);
+                },
+            ])
+            ->orderBy('nama')
+            ->get()
+            ->filter(fn ($program) => $program->total_haki > 0)
+            ->sortByDesc('total_haki')
+            ->take(8)
+            ->values();
 
         return view('public.dashboard', compact(
-            'totalTercatat',
-            'totalPublic',
-            'jenisStats',
-            'publicHakis'
+            'totalHakiAktif',
+            'totalJenisHaki',
+            'totalFakultas',
+            'totalJurusan',
+            'facultyStats',
+            'studyProgramStats'
         ));
     }
 }

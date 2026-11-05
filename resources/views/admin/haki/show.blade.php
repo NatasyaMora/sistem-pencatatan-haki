@@ -113,7 +113,34 @@
                 <h2 class="fw-bold mb-1">Detail HAKI</h2>
                 <p class="text-white-50 mb-0">Informasi lengkap Kekayaan Intelektual dan data pemilik terdaftar.</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
+                @if($haki->status === 'aktif')
+                    <form action="{{ route('admin.haki.toggle-status', $haki) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-power me-1"></i> Nonaktifkan
+                        </button>
+                    </form>
+                @else
+                    @php
+                        $canActivate = $haki->tanggal_kadaluarsa && $haki->tanggal_kadaluarsa->toDateString() >= now('Asia/Jakarta')->toDateString();
+                    @endphp
+                    @if($canActivate)
+                        <form action="{{ route('admin.haki.toggle-status', $haki) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-semibold">
+                                <i class="bi bi-check-circle me-1"></i> Aktifkan
+                            </button>
+                        </form>
+                    @else
+                        <button type="button" class="btn btn-secondary rounded-pill px-4 py-2 fw-semibold" disabled title="Masa berlaku sudah kedaluwarsa, tidak dapat diaktifkan">
+                            <i class="bi bi-slash-circle me-1"></i> Aktifkan
+                        </button>
+                    @endif
+                @endif
+
                 <a href="{{ route('admin.haki.edit', $haki) }}" class="btn btn-warning rounded-pill px-4 py-2 fw-semibold">
                     <i class="bi bi-pencil-square me-1"></i> Edit
                 </a>
@@ -132,7 +159,17 @@
                     <h5 class="fw-bold mb-0 text-primary">
                         <i class="bi bi-journal-bookmark-fill me-2"></i>Informasi HAKI
                     </h5>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
+                        @if($haki->status === 'aktif')
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-2 fs-6">
+                                <i class="bi bi-check-circle me-1"></i> Aktif
+                            </span>
+                        @else
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 fs-6">
+                                <i class="bi bi-x-circle me-1"></i> Nonaktif
+                            </span>
+                        @endif
+
                         @if($haki->is_public)
                             <span class="badge bg-success px-3 py-2 fs-6">
                                 <i class="bi bi-globe2 me-1"></i> Publik
@@ -162,7 +199,7 @@
 
                     <div class="col-md-6">
                         <div class="info-label">Nomor Sertifikat</div>
-                        <div class="info-value text-secondary">{{ $haki->nomor_sertifikat ?? '-' }}</div>
+                        <div class="info-value text-secondary font-monospace">{{ $haki->nomor_sertifikat ?? '-' }}</div>
                     </div>
 
                     <div class="col-md-6">
@@ -173,8 +210,40 @@
                     </div>
 
                     <div class="col-md-6">
+                        <div class="info-label">Tanggal Kedaluwarsa</div>
+                        <div class="info-value text-secondary">
+                            {{ $haki->tanggal_kadaluarsa ? $haki->tanggal_kadaluarsa->format('d F Y') : '-' }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-label">Fakultas</div>
+                        <div class="info-value text-secondary">{{ $haki->faculty->nama ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-label">Program Studi / Jurusan</div>
+                        <div class="info-value text-secondary">{{ $haki->studyProgram->nama ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-md-6">
                         <div class="info-label">Tahun</div>
                         <div class="info-value text-secondary">{{ $haki->tahun ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-label">Status HAKI</div>
+                        <div class="info-value">
+                            @if($haki->status === 'aktif')
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-2 rounded-pill">
+                                    <i class="bi bi-check-circle me-1"></i> Aktif
+                                </span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 rounded-pill">
+                                    <i class="bi bi-x-circle me-1"></i> Nonaktif
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="col-12">

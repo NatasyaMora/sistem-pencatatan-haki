@@ -20,6 +20,8 @@ class AdminHakiController extends Controller
      */
     public function index(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $search = $request->query('search');
         $jenis = $request->query('jenis');
         $tahun = $request->query('tahun');
@@ -84,7 +86,9 @@ class AdminHakiController extends Controller
      */
     public function show(Haki $haki): View
     {
-        $haki->load('user');
+        Haki::syncExpiredStatuses();
+        $haki->refresh();
+        $haki->load(['user', 'jenisHaki', 'faculty', 'studyProgram']);
 
         return view('admin.haki.show', compact('haki'));
     }
@@ -94,6 +98,8 @@ class AdminHakiController extends Controller
      */
     public function edit(Haki $haki): View
     {
+        Haki::syncExpiredStatuses();
+        $haki->refresh();
         $haki->load('user');
 
         $jenisOptions = [
@@ -122,15 +128,23 @@ class AdminHakiController extends Controller
         Haki $haki
     ): RedirectResponse {
         $validated = $request->validated();
+        $today = now('Asia/Jakarta')->toDateString();
 
         $updateData = [
             'judul_haki' => $validated['judul_haki'],
             'jenis_haki' => $validated['jenis_haki'],
             'nomor_sertifikat' => $validated['nomor_sertifikat'],
             'tanggal_terbit' => $validated['tanggal_terbit'],
+            'tanggal_kadaluarsa' => $validated['tanggal_kadaluarsa'],
             'tahun' => $validated['tahun'],
             'deskripsi' => $validated['deskripsi'] ?? null,
         ];
+
+        // Jika tanggal kedaluwarsa sudah lewat, otomatis nonaktifkan
+        if ($validated['tanggal_kadaluarsa'] < $today) {
+            $updateData['status'] = 'nonaktif';
+            $updateData['is_public'] = false;
+        }
 
         $oldFilePath = $haki->file_sertifikat;
         $newFilePath = null;
@@ -178,6 +192,67 @@ class AdminHakiController extends Controller
         return redirect()
             ->route('admin.haki.show', $haki)
             ->with('success', 'Data HAKI berhasil diperbarui.');
+    }
+
+    /**
+     * Mengubah status aktif / nonaktif HAKI.
+     */
+    public function toggleStatus(Haki $haki): RedirectResponse
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        if ($haki->status === 'aktif') {
+            $haki->update([
+                'status' => 'nonaktif',
+                'is_public' => false,
+            ]);
+
+            return back()->with('success', "Status HAKI '{$haki->judul_haki}' berhasil dinonaktifkan.");
+        }
+
+        // Jika akan diaktifkan kembali, pastikan tanggal kedaluwarsa masih berlaku
+        if (empty($haki->tanggal_kadaluarsa) || $haki->tanggal_kadaluarsa->toDateString() < $today) {
+            return back()->with('error', 'HAKI yang sudah kedaluwarsa atau belum memiliki tanggal kedaluwarsa tidak dapat diaktifkan kembali.');
+        }
+
+        $haki->update([
+            'status' => 'aktif',
+            'is_public' => true,
+        ]);
+
+        return back()->with('success', "Status HAKI '{$haki->judul_haki}' berhasil diaktifkan.");
+    }
+
+    /**
+     * Mengaktifkan HAKI yang belum kedaluwarsa.
+     */
+    public function activate(Haki $haki): RedirectResponse
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        if (empty($haki->tanggal_kadaluarsa) || $haki->tanggal_kadaluarsa->toDateString() < $today) {
+            return back()->with('error', 'HAKI yang sudah kedaluwarsa atau belum memiliki tanggal kedaluwarsa tidak dapat diaktifkan kembali.');
+        }
+
+        $haki->update([
+            'status' => 'aktif',
+            'is_public' => true,
+        ]);
+
+        return back()->with('success', "Status HAKI '{$haki->judul_haki}' berhasil diaktifkan.");
+    }
+
+    /**
+     * Menonaktifkan HAKI.
+     */
+    public function deactivate(Haki $haki): RedirectResponse
+    {
+        $haki->update([
+            'status' => 'nonaktif',
+            'is_public' => false,
+        ]);
+
+        return back()->with('success', "Status HAKI '{$haki->judul_haki}' berhasil dinonaktifkan.");
     }
 
     /**

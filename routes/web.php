@@ -77,6 +77,13 @@ Route::middleware(['auth', 'role:user'])
             'store',
         ])->whereNumber('haki')
           ->name('renewal.store');
+
+        // Detail HAKI milik pengguna
+        Route::get('/{haki}', [
+            MyHakiController::class,
+            'show',
+        ])->whereNumber('haki')
+          ->name('show');
     });
 
 /*
@@ -124,6 +131,24 @@ Route::middleware(['auth', 'role:admin'])
             'show',
         ])->whereNumber('haki')
           ->name('haki.show');
+
+        Route::patch('/haki/{haki}/toggle-status', [
+            AdminHakiController::class,
+            'toggleStatus',
+        ])->whereNumber('haki')
+          ->name('haki.toggle-status');
+
+        Route::patch('/haki/{haki}/activate', [
+            AdminHakiController::class,
+            'activate',
+        ])->whereNumber('haki')
+          ->name('haki.activate');
+
+        Route::patch('/haki/{haki}/deactivate', [
+            AdminHakiController::class,
+            'deactivate',
+        ])->whereNumber('haki')
+          ->name('haki.deactivate');
 
         /*
         |------------------------------------------------------------------

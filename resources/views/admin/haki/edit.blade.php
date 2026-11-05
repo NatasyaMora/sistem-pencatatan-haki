@@ -129,11 +129,11 @@
                 <!-- 2. Judul HAKI -->
                 <div class="col-12">
                     <label for="judul_haki" class="form-label fw-semibold">Judul HAKI <span class="text-danger">*</span></label>
-                    <input type="text" 
-                           id="judul_haki" 
-                           name="judul_haki" 
-                           class="form-control @error('judul_haki') is-invalid @enderror" 
-                           value="{{ old('judul_haki', $haki->judul_haki) }}" 
+                    <input type="text"
+                           id="judul_haki"
+                           name="judul_haki"
+                           class="form-control @error('judul_haki') is-invalid @enderror"
+                           value="{{ old('judul_haki', $haki->judul_haki) }}"
                            required>
                     @error('judul_haki')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -143,9 +143,9 @@
                 <!-- 3. Jenis HAKI -->
                 <div class="col-md-6">
                     <label for="jenis_haki" class="form-label fw-semibold">Jenis HAKI <span class="text-danger">*</span></label>
-                    <select id="jenis_haki" 
-                            name="jenis_haki" 
-                            class="form-select @error('jenis_haki') is-invalid @enderror" 
+                    <select id="jenis_haki"
+                            name="jenis_haki"
+                            class="form-select @error('jenis_haki') is-invalid @enderror"
                             required>
                         <option value="">-- Pilih Jenis HAKI --</option>
                         @foreach($jenisOptions as $option)
@@ -162,11 +162,11 @@
                 <!-- 4. Nomor Sertifikat -->
                 <div class="col-md-6">
                     <label for="nomor_sertifikat" class="form-label fw-semibold">Nomor Sertifikat <span class="text-danger">*</span></label>
-                    <input type="text" 
-                           id="nomor_sertifikat" 
-                           name="nomor_sertifikat" 
-                           class="form-control @error('nomor_sertifikat') is-invalid @enderror" 
-                           value="{{ old('nomor_sertifikat', $haki->nomor_sertifikat) }}" 
+                    <input type="text"
+                           id="nomor_sertifikat"
+                           name="nomor_sertifikat"
+                           class="form-control @error('nomor_sertifikat') is-invalid @enderror"
+                           value="{{ old('nomor_sertifikat', $haki->nomor_sertifikat) }}"
                            required>
                     @error('nomor_sertifikat')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -176,27 +176,41 @@
                 <!-- 5. Tanggal Terbit -->
                 <div class="col-md-6">
                     <label for="tanggal_terbit" class="form-label fw-semibold">Tanggal Terbit <span class="text-danger">*</span></label>
-                    <input type="date" 
-                           id="tanggal_terbit" 
-                           name="tanggal_terbit" 
-                           class="form-control @error('tanggal_terbit') is-invalid @enderror" 
-                           value="{{ old('tanggal_terbit', $haki->tanggal_terbit ? $haki->tanggal_terbit->format('Y-m-d') : '') }}" 
+                    <input type="date"
+                           id="tanggal_terbit"
+                           name="tanggal_terbit"
+                           class="form-control @error('tanggal_terbit') is-invalid @enderror"
+                           value="{{ old('tanggal_terbit', $haki->tanggal_terbit ? $haki->tanggal_terbit->format('Y-m-d') : '') }}"
                            required>
                     @error('tanggal_terbit')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <!-- 6. Tahun -->
+                <!-- 6. Tanggal Kedaluwarsa -->
+                <div class="col-md-6">
+                    <label for="tanggal_kadaluarsa" class="form-label fw-semibold">Tanggal Kedaluwarsa <span class="text-danger">*</span></label>
+                    <input type="date"
+                           id="tanggal_kadaluarsa"
+                           name="tanggal_kadaluarsa"
+                           class="form-control @error('tanggal_kadaluarsa') is-invalid @enderror"
+                           value="{{ old('tanggal_kadaluarsa', $haki->tanggal_kadaluarsa ? $haki->tanggal_kadaluarsa->format('Y-m-d') : '') }}"
+                           required>
+                    @error('tanggal_kadaluarsa')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- 7. Tahun -->
                 <div class="col-md-6">
                     <label for="tahun" class="form-label fw-semibold">Tahun <span class="text-danger">*</span></label>
-                    <input type="number" 
-                           id="tahun" 
-                           name="tahun" 
-                           min="1900" 
-                           max="2100" 
-                           class="form-control @error('tahun') is-invalid @enderror" 
-                           value="{{ old('tahun', $haki->tahun) }}" 
+                    <input type="number"
+                           id="tahun"
+                           name="tahun"
+                           min="1900"
+                           max="2100"
+                           class="form-control @error('tahun') is-invalid @enderror"
+                           value="{{ old('tahun', $haki->tahun) }}"
                            required>
                     @error('tahun')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -206,10 +220,10 @@
                 <!-- 7. Deskripsi -->
                 <div class="col-12">
                     <label for="deskripsi" class="form-label fw-semibold">Deskripsi</label>
-                    <textarea id="deskripsi" 
-                              name="deskripsi" 
-                              rows="4" 
-                              class="form-control @error('deskripsi') is-invalid @enderror" 
+                    <textarea id="deskripsi"
+                              name="deskripsi"
+                              rows="4"
+                              class="form-control @error('deskripsi') is-invalid @enderror"
                               placeholder="Masukkan deskripsi HAKI...">{{ old('deskripsi', $haki->deskripsi) }}</textarea>
                     @error('deskripsi')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -221,15 +235,15 @@
                     <label for="file_sertifikat" class="form-label fw-semibold">File Sertifikat (Opsional)</label>
                     <div class="p-3 bg-light rounded-3 mb-2 border">
                         <small class="text-secondary d-block mb-1 fw-semibold">
-                            <i class="bi bi-info-circle me-1"></i> File saat ini: 
+                            <i class="bi bi-info-circle me-1"></i> File saat ini:
                             <span class="text-dark">{{ $haki->file_sertifikat ?? 'Belum ada file' }}</span>
                         </small>
                         <small class="text-muted d-block">Kosongkan jika tidak ingin mengganti file.</small>
                     </div>
-                    <input type="file" 
-                           id="file_sertifikat" 
-                           name="file_sertifikat" 
-                           class="form-control @error('file_sertifikat') is-invalid @enderror" 
+                    <input type="file"
+                           id="file_sertifikat"
+                           name="file_sertifikat"
+                           class="form-control @error('file_sertifikat') is-invalid @enderror"
                            accept=".pdf,.jpg,.jpeg,.png">
                     <div class="form-text text-muted">
                         Format yang diperbolehkan: PDF, JPG, JPEG, PNG. Maksimal 3 MB.

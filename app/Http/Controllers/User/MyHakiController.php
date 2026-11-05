@@ -21,6 +21,8 @@ class MyHakiController extends Controller
      */
     public function index(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $user = $request->user();
 
         $hakis = $user->hakis()
@@ -36,6 +38,8 @@ class MyHakiController extends Controller
      */
     public function create(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $user = $request->user();
 
         $jenisOptions = JenisHaki::where('status', 'aktif')
@@ -56,6 +60,25 @@ class MyHakiController extends Controller
             'faculties',
             'studyPrograms'
         ));
+    }
+
+    /**
+     * Menampilkan detail HAKI milik pengguna yang sedang login.
+     *
+     * Pengguna hanya boleh melihat HAKI miliknya sendiri.
+     * Akses ke HAKI milik pengguna lain menghasilkan 404 (Not Found).
+     */
+    public function show(Request $request, int $id): View
+    {
+        Haki::syncExpiredStatuses();
+
+        $user = $request->user();
+
+        $haki = $user->hakis()
+            ->with(['jenisHaki', 'faculty', 'studyProgram'])
+            ->findOrFail($id);
+
+        return view('user.my-haki.show', compact('user', 'haki'));
     }
 
     /**
@@ -95,10 +118,11 @@ class MyHakiController extends Controller
                 ]);
         }
 
-        // Tentukan status berdasarkan tanggal kedaluwarsa.
-        $status = $validated['tanggal_kadaluarsa'] >= now()->toDateString()
-            ? 'aktif'
-            : 'nonaktif';
+        // Tentukan status dan publikasi berdasarkan tanggal kedaluwarsa.
+        $today = now('Asia/Jakarta')->toDateString();
+        $isActive = $validated['tanggal_kadaluarsa'] >= $today;
+        $status = $isActive ? 'aktif' : 'nonaktif';
+        $isPublic = $isActive;
 
         try {
             Haki::create([
@@ -118,7 +142,7 @@ class MyHakiController extends Controller
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'file_sertifikat' => $filePath,
                 'status' => $status,
-                'is_public' => false,
+                'is_public' => $isPublic,
             ]);
         } catch (Throwable $exception) {
             // Hapus berkas baru apabila penyimpanan data gagal,

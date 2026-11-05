@@ -22,6 +22,8 @@ class AdminRenewalRequestController extends Controller
      */
     public function index(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $query = RenewalRequest::with(['haki', 'user'])->latest();
 
         $status = $request->query('status');
@@ -45,6 +47,8 @@ class AdminRenewalRequestController extends Controller
      */
     public function show(RenewalRequest $renewalRequest): View
     {
+        Haki::syncExpiredStatuses();
+
         $renewalRequest->load(['haki', 'user']);
 
         return view(
@@ -188,11 +192,12 @@ class AdminRenewalRequestController extends Controller
 
                 $tanggalBaru = $pending->tanggal_kadaluarsa_baru
                     ->toDateString();
+                $today = now('Asia/Jakarta')->toDateString();
+                $isActive = $tanggalBaru >= $today;
 
                 $haki->tanggal_kadaluarsa = $tanggalBaru;
-                $haki->status = $tanggalBaru >= now()->toDateString()
-                    ? 'aktif'
-                    : 'nonaktif';
+                $haki->status = $isActive ? 'aktif' : 'nonaktif';
+                $haki->is_public = $isActive;
 
                 if ($pending->nomor_sertifikat_baru !== null) {
                     $haki->nomor_sertifikat =

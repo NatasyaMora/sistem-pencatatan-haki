@@ -234,8 +234,8 @@
                             <th scope="col">Jenis HAKI</th>
                             <th scope="col">Nomor Sertifikat</th>
                             <th scope="col">Tanggal Terbit</th>
-                            <th scope="col">Tahun</th>
-                            <th scope="col" class="text-center">Status Publikasi</th>
+                            <th scope="col">Tanggal Kedaluwarsa</th>
+                            <th scope="col" class="text-center">Status HAKI</th>
                             <th scope="col" class="text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -276,33 +276,41 @@
                                         : '-' }}
                                 </td>
 
-                                <td>
-                                    <span class="badge bg-light text-dark border">
-                                        {{ $haki->tahun }}
-                                    </span>
+                                <td class="text-secondary small">
+                                    {{ $haki->tanggal_kadaluarsa
+                                        ? $haki->tanggal_kadaluarsa->format('d/m/Y')
+                                        : '-' }}
                                 </td>
 
                                 <td class="text-center">
-                                    @if($haki->is_public)
+                                    @if($haki->status === 'aktif')
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-2 rounded-pill">
-                                            <i class="bi bi-globe me-1"></i>
-                                            Dipublikasikan
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Aktif
                                         </span>
                                     @else
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 rounded-pill">
-                                            <i class="bi bi-eye-slash me-1"></i>
-                                            Tidak Dipublikasikan
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Nonaktif
                                         </span>
                                     @endif
                                 </td>
 
-                                <!-- Tombol Pengajuan Pembaruan -->
+                                <!-- Aksi: Tombol Detail & Tombol Ajukan Pembaruan -->
                                 <td class="text-center">
-                                    <a href="{{ route('user.haki.renewal.create', $haki->id) }}"
-                                       class="btn btn-sm btn-outline-primary rounded-pill text-nowrap">
-                                        <i class="bi bi-arrow-repeat me-1"></i>
-                                        Ajukan Pembaruan
-                                    </a>
+                                    <div class="d-flex justify-content-center align-items-center gap-1">
+                                        <a href="{{ route('user.haki.show', $haki->id) }}"
+                                           class="btn btn-sm btn-outline-info rounded-pill text-nowrap px-3">
+                                            <i class="bi bi-eye me-1"></i>
+                                            Detail
+                                        </a>
+
+                                        <a href="{{ route('user.haki.renewal.create', $haki->id) }}"
+                                           class="btn btn-sm btn-outline-primary rounded-pill text-nowrap px-3">
+                                            <i class="bi bi-arrow-repeat me-1"></i>
+                                            Ajukan Pembaruan
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

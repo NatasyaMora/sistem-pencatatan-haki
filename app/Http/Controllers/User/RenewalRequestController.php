@@ -20,6 +20,8 @@ class RenewalRequestController extends Controller
      */
     public function index(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $renewalRequests = $request->user()
             ->renewalRequests()
             ->with('haki')
@@ -37,6 +39,9 @@ class RenewalRequestController extends Controller
      */
     public function create(Haki $haki): View
     {
+        Haki::syncExpiredStatuses();
+        $haki->refresh();
+
         $this->authorizeHakiOwner($haki);
 
         $hasPendingRequest = $haki->renewalRequests()

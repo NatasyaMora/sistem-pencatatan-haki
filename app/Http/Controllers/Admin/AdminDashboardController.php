@@ -15,6 +15,8 @@ class AdminDashboardController extends Controller
      */
     public function index(Request $request): View
     {
+        Haki::syncExpiredStatuses();
+
         $admin = $request->user();
 
         // 1. Total seluruh HAKI

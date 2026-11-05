@@ -139,4 +139,27 @@ class Haki extends Model
     {
         return $query->where('is_public', $isPublic);
     }
+
+    /**
+     * Sinkronisasi status HAKI yang sudah melewati tanggal kedaluwarsa
+     * atau tidak memiliki tanggal kedaluwarsa.
+     */
+    public static function syncExpiredStatuses(): int
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        return static::query()
+            ->where(function (Builder $query) {
+                $query->where('status', 'aktif')
+                    ->orWhere('is_public', true);
+            })
+            ->where(function (Builder $query) use ($today) {
+                $query->whereNull('tanggal_kadaluarsa')
+                    ->orWhereDate('tanggal_kadaluarsa', '<', $today);
+            })
+            ->update([
+                'status' => 'nonaktif',
+                'is_public' => false,
+            ]);
+    }
 }

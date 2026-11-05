@@ -340,6 +340,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => 'Paten',
             'nomor_sertifikat' => 'CERT-BARU-888',
             'tanggal_terbit' => '2025-05-05',
+            'tanggal_kadaluarsa' => '2027-05-05',
             'tahun' => 2025,
             'deskripsi' => 'Deskripsi Baru',
         ]);
@@ -379,6 +380,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => 'Merek',
             'nomor_sertifikat' => 'CERT-KEEP-FILE',
             'tanggal_terbit' => '2024-10-10',
+            'tanggal_kadaluarsa' => '2027-10-10',
             'tahun' => 2024,
         ]);
 
@@ -432,6 +434,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => 'Hak Cipta',
             'nomor_sertifikat' => 'CERT-SWAP-FILE',
             'tanggal_terbit' => '2025-01-01',
+            'tanggal_kadaluarsa' => '2027-01-01',
             'tahun' => 2025,
             'file_sertifikat' => $newFile,
         ]);
@@ -480,6 +483,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => 'Hak Cipta',
             'nomor_sertifikat' => 'CERT-LARGE-FILE',
             'tanggal_terbit' => '2025-01-01',
+            'tanggal_kadaluarsa' => '2027-01-01',
             'tahun' => 2025,
             'file_sertifikat' => $largeFile,
         ]);
@@ -513,6 +517,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => 'Hak Cipta',
             'nomor_sertifikat' => 'CERT-INVALID-FORMAT',
             'tanggal_terbit' => '2025-01-01',
+            'tanggal_kadaluarsa' => '2027-01-01',
             'tahun' => 2025,
             'file_sertifikat' => $invalidFile,
         ]);
@@ -541,6 +546,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki' => '',
             'nomor_sertifikat' => '',
             'tanggal_terbit' => '',
+            'tanggal_kadaluarsa' => '',
             'tahun' => '',
         ]);
 
@@ -549,6 +555,7 @@ class AdminHakiTest extends TestCase
             'jenis_haki',
             'nomor_sertifikat',
             'tanggal_terbit',
+            'tanggal_kadaluarsa',
             'tahun',
         ]);
     }

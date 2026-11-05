@@ -97,6 +97,21 @@
         </div>
     </div>
 
+    <!-- Flash Alerts -->
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show border-0 rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show border-0 rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Area Pencarian & Filter -->
     <div class="card card-custom p-4 mb-4">
         <form method="GET" action="{{ route('admin.haki.index') }}" class="row g-3 align-items-end">
@@ -163,9 +178,11 @@
                         <th scope="col">Jenis</th>
                         <th scope="col">Nomor Sertifikat</th>
                         <th scope="col">Tanggal Terbit</th>
+                        <th scope="col">Tanggal Kedaluwarsa</th>
                         <th scope="col">Tahun</th>
                         <th scope="col">Pemilik</th>
                         <th scope="col">NIM/NIP</th>
+                        <th scope="col" class="text-center">Status HAKI</th>
                         <th scope="col" class="text-center">Status Publikasi</th>
                         <th scope="col" class="text-center">Aksi</th>
                     </tr>
@@ -184,11 +201,14 @@
                                     {{ $haki->jenis_haki }}
                                 </span>
                             </td>
-                            <td class="text-secondary small">
+                            <td class="text-secondary small font-monospace">
                                 {{ $haki->nomor_sertifikat ?? '-' }}
                             </td>
                             <td class="text-secondary small">
                                 {{ $haki->tanggal_terbit ? $haki->tanggal_terbit->format('d/m/Y') : '-' }}
+                            </td>
+                            <td class="text-secondary small">
+                                {{ $haki->tanggal_kadaluarsa ? $haki->tanggal_kadaluarsa->format('d/m/Y') : '-' }}
                             </td>
                             <td class="text-secondary small">
                                 {{ $haki->tahun ?? '-' }}
@@ -200,6 +220,17 @@
                                 {{ $haki->user->identity_number ?? '-' }}
                             </td>
                             <td class="text-center">
+                                @if($haki->status === 'aktif')
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1">
+                                        <i class="bi bi-check-circle me-1"></i> Aktif
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1">
+                                        <i class="bi bi-x-circle me-1"></i> Nonaktif
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center">
                                 @if($haki->is_public)
                                     <span class="badge bg-success px-2 py-1 fs-7">Publik</span>
                                 @else
@@ -207,14 +238,47 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                <a href="{{ route('admin.haki.show', $haki) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                    <i class="bi bi-eye me-1"></i> Detail
-                                </a>
+                                <div class="d-flex justify-content-center align-items-center gap-1">
+                                    <a href="{{ route('admin.haki.show', $haki) }}" class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Lihat Detail">
+                                        <i class="bi bi-eye"></i> Detail
+                                    </a>
+
+                                    <a href="{{ route('admin.haki.edit', $haki) }}" class="btn btn-sm btn-outline-warning rounded-pill px-2" title="Edit HAKI">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+
+                                    @if($haki->status === 'aktif')
+                                        <form action="{{ route('admin.haki.toggle-status', $haki) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Nonaktifkan HAKI">
+                                                <i class="bi bi-power"></i> Nonaktifkan
+                                            </button>
+                                        </form>
+                                    @else
+                                        @php
+                                            $canActivate = $haki->tanggal_kadaluarsa && $haki->tanggal_kadaluarsa->toDateString() >= now('Asia/Jakarta')->toDateString();
+                                        @endphp
+                                        @if($canActivate)
+                                            <form action="{{ route('admin.haki.toggle-status', $haki) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2" title="Aktifkan HAKI">
+                                                    <i class="bi bi-check-circle"></i> Aktifkan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2" disabled title="Masa berlaku sudah kedaluwarsa, tidak dapat diaktifkan">
+                                                <i class="bi bi-slash-circle"></i> Aktifkan
+                                            </button>
+                                        @endif
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="12" class="text-center py-5 text-muted">
                                 <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary"></i>
                                 Belum ada data HAKI yang ditemukan.
                             </td>
